@@ -6,49 +6,49 @@ from app.models.image_model import ImageModel
 class ImageService:
     def compress(self, image_model: ImageModel, compression_level: str = "medium") -> io.BytesIO:
         try:
-            # Abrir a imagem e converter para bytes
             image_model.file.seek(0)
             image_bytes = image_model.file.read()
 
-            image = Image.open(io.BytesIO(image_bytes))
+            with Image.open(io.BytesIO(image_bytes)) as image:
+                if image.mode == "RGBA":
+                    image = image.convert("RGB")
 
-            # Converter para RGB se for RGBA
-            if image.mode == "RGBA":
-                image = image.convert("RGB")
+                max_size = (1920, 1080)
+                image.thumbnail(max_size, Image.LANCZOS)
 
-            # Redimensionar a imagem se for muito grande
-            max_size = (1920, 1080)  # Full HD
-            image.thumbnail(max_size, Image.LANCZOS)
+                jpeg_quality, png_compression = self._get_compression_settings(compression_level)
 
-            # Definir qualidade com base no nível de compressão
-            if compression_level == "low":
-                jpeg_quality = 80
-                png_compression = 6
-            elif compression_level == "medium":
-                jpeg_quality = 70
-                png_compression = 7
-            else:  # high
-                jpeg_quality = 60
-                png_compression = 9
+                output = io.BytesIO()
+                image_format = image.format.upper()
 
-            # Comprimir a imagem
-            output = io.BytesIO()
+                self._save_image(image, output, image_format, jpeg_quality, png_compression)
 
-            if image.format == "PNG":
-                image.save(output, format="PNG", optimize=True, compress_level=png_compression)
-            elif image.format in ["JPEG", "JPG"]:
-                image.save(output, format="JPEG", optimize=True, quality=jpeg_quality)
-            else:
-                # Para outros formatos, use JPEG
-                image.save(output, format="JPEG", optimize=True, quality=jpeg_quality)
+                output.seek(0)
 
-            output.seek(0)
+                if len(output.getvalue()) >= len(image_bytes):
+                    return io.BytesIO(image_bytes)
 
-            # Verifica se a compressão foi efetiva
-            if len(output.getvalue()) >= len(image_bytes):
-                # Se não foi efetiva, retorna a imagem original
-                return io.BytesIO(image_bytes)
+                return output
 
-            return output
         except Exception as e:
-            raise Exception(f"Error compressing image: {str(e)}")
+            raise RuntimeError(f"Error compressing image: {str(e)}")
+
+    @staticmethod
+    def _get_compression_settings(compression_level: str):
+        levels = {
+            "low": (90, 3),
+            "medium": (70, 7),
+            "high": (30, 9),
+        }
+        return levels.get(compression_level.lower(), levels["medium"])
+
+    @staticmethod
+    def _save_image(image: Image, output: io.BytesIO, format: str, jpeg_quality: int, png_compression: int):
+        save_params = {
+            "JPEG": {"format": "JPEG", "quality": jpeg_quality, "optimize": True},
+            "JPG": {"format": "JPEG", "quality": jpeg_quality, "optimize": True},
+            "PNG": {"format": "PNG", "compress_level": png_compression, "optimize": True},
+        }
+
+        params = save_params.get(format, save_params["JPEG"])
+        image.save(output, **params)
