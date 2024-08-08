@@ -1,7 +1,8 @@
 from flask import Blueprint, request, send_file
 from app.services.image_service import ImageService
+from app.models.image_model import ImageModel
 from app.models.file_model import FileModel
-from app.services.pdf_service import PDFService
+from app.services.file_service import FileService
 from app.utils.error_handler import APIError
 
 api = Blueprint("api", __name__)
@@ -14,7 +15,7 @@ def compress_image():
         raise APIError(400, "MISSING_IMAGE", "No image file provided")
 
     try:
-        image_model = FileModel(file=image_file)
+        image_model = ImageModel(file=image_file)
     except ValueError as e:
         raise APIError(400, "INVALID_IMAGE", str(e))
 
@@ -27,21 +28,21 @@ def compress_image():
     return send_file(compressed_image, mimetype=image_file.mimetype, as_attachment=True, download_name=f"compressed_{image_file.filename}")
 
 
-@api.route("/compress/pdf", methods=["POST"])
+@api.route("/compress/file", methods=["POST"])
 def compress_pdf():
-    pdf_file = request.files.get("pdf")
-    if not pdf_file:
-        raise APIError(400, "MISSING_PDF", "No PDF file provided")
+    file_file = request.files.get("file")
+    if not file_file:
+        raise APIError(400, "MISSING_FILE", "No file file provided")
 
     try:
-        pdf_model = FileModel(file=pdf_file)
+        file_model = FileModel(file=file_file)
     except ValueError as e:
-        raise APIError(400, "INVALID_PDF", str(e))
+        raise APIError(400, "INVALID_FILE", str(e))
 
-    pdf_service = PDFService()
+    file_service = FileService()
     try:
-        compressed_pdf = pdf_service.compress(pdf_model)
+        compressed_pdf = file_service.compress(file_model)
     except Exception as e:
-        raise APIError(500, "COMPRESSION_ERROR", f"Error compressing PDF: {str(e)}")
+        raise APIError(500, "COMPRESSION_ERROR", f"Error compressing file: {str(e)}")
 
-    return send_file(compressed_pdf, mimetype=pdf_file.mimetype, as_attachment=True, download_name=f"compressed_{pdf_file.filename}")
+    return send_file(compressed_pdf, mimetype=file_file.mimetype, as_attachment=True, download_name=f"compressed_{file_file.filename}")

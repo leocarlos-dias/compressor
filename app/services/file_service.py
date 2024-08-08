@@ -3,13 +3,13 @@ from pikepdf import Pdf
 from app.models.file_model import FileModel
 
 
-class PDFService:
+class FileService:
     def compress(self, file_model: FileModel) -> io.BytesIO:
         try:
             file_model.file.seek(0)
-            pdf_bytes = file_model.file.read()
+            file_bytes = file_model.file.read()
 
-            pdf = Pdf.open(io.BytesIO(pdf_bytes))
+            pdf = Pdf.open(io.BytesIO(file_bytes))
 
             output = io.BytesIO()
 
@@ -17,8 +17,8 @@ class PDFService:
 
             output.seek(0)
 
-            if len(output.getvalue()) >= len(pdf_bytes):
-                return io.BytesIO(pdf_bytes)
+            if len(output.getvalue()) >= len(file_bytes):
+                return io.BytesIO(file_bytes)
 
             return output
         except Exception as e:
