@@ -1,10 +1,10 @@
 from PIL import Image
 import io
-from app.models.image_model import ImageModel
+from app.models.file_model import FileModel
 
 
 class ImageService:
-    def compress(self, image_model: ImageModel, compression_level: str = "medium") -> io.BytesIO:
+    def compress(self, image_model: FileModel, compression_level: str = "medium") -> io.BytesIO:
         try:
             image_model.file.seek(0)
             image_bytes = image_model.file.read()

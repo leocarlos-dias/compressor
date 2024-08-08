@@ -1,5 +1,6 @@
-Flask==2.3.2
-Werkzeug==2.3.6
-Pillow==9.5.0
-pydantic==1.10.9
-gunicorn==20.1.0
+Flask
+Werkzeug
+Pillow
+pydantic
+gunicorn
+pikepdf
